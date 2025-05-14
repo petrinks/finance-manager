@@ -2,6 +2,10 @@
 
 import { ExpensesList } from '@/components/expenses-list';
 import { FinancialSummary } from '@/components/financial-summary';
+import { IncomeForm } from '@/components/income-form';
+import { IncomeList } from '@/components/income-list';
+import { InstallmentExpenseForm } from '@/components/installment-expense-form';
+import { RecurringExpenseForm } from '@/components/recurring-expense-form';
 import {
   Card,
   CardContent,
@@ -21,7 +25,6 @@ import {
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { RecurringExpenseForm } from './recurring-expense-form';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -118,6 +121,88 @@ export default function Dashboard() {
 
   // Implementar funções semelhantes para despesas parceladas e receitas
 
+  // ——— Parceladas ———
+  const addInstallmentExpense = async (
+    expense: Omit<
+      InstallmentExpense,
+      'id' | 'userId' | 'createdAt' | 'updatedAt'
+    >
+  ) => {
+    const res = await fetch('/api/installment-expenses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(expense),
+    });
+
+    if (!res.ok) {
+      console.error('Falha ao adicionar despesa parcelada');
+      return;
+    }
+
+    const newExpense: InstallmentExpense = await res.json();
+    setInstallmentExpenses((curr) => [...curr, newExpense]);
+  };
+
+  // ——— Receitas ———
+  const addIncome = async (
+    incomeData: Omit<Income, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ) => {
+    const res = await fetch('/api/incomes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(incomeData),
+    });
+
+    if (!res.ok) {
+      console.error('Falha ao adicionar receita');
+      return;
+    }
+
+    // faz o await aqui, fora do setter
+    const newIncome: Income = await res.json();
+
+    // agora sim, sem await dentro do callback
+    setIncomes((curr) => [...curr, newIncome]);
+  };
+
+  // Remove despesa parcelada
+  const removeInstallmentExpense = async (id: string) => {
+    try {
+      const res = await fetch(`/api/installment-expenses/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        console.log(res);
+        console.error('Falha ao remover despesa parcelada');
+        return;
+      }
+      // callback síncrono
+      setInstallmentExpenses((curr) =>
+        curr.filter((expense) => expense.id !== id)
+      );
+    } catch (error) {
+      console.error('Erro ao remover despesa parcelada:', error);
+    }
+  };
+
+  // Remove receita
+  const removeIncome = async (id: string) => {
+    try {
+      const res = await fetch(`/api/incomes/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        console.error('Falha ao remover receita');
+        return;
+      }
+      // callback síncrono
+      setIncomes((curr) => curr.filter((income) => income.id !== id));
+    } catch (error) {
+      console.error('Erro ao remover receita:', error);
+    }
+  };
+
+  // totais
   const totalRecurringExpenses =
     calculateTotalRecurringExpenses(recurringExpenses);
   const totalInstallmentExpenses =
@@ -186,7 +271,7 @@ export default function Dashboard() {
                 <CardDescription>Adicione compras parceladas</CardDescription>
               </CardHeader>
               <CardContent>
-                {/* <InstallmentExpenseForm onSubmit={addInstallmentExpense} /> */}
+                <InstallmentExpenseForm onSubmit={addInstallmentExpense} />
               </CardContent>
             </Card>
 
@@ -198,7 +283,7 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* <IncomeForm onSubmit={addIncome} /> */}
+                <IncomeForm onSubmit={addIncome} />
               </CardContent>
             </Card>
           </div>
@@ -209,12 +294,12 @@ export default function Dashboard() {
             recurringExpenses={recurringExpenses}
             installmentExpenses={installmentExpenses}
             onRemoveRecurring={removeRecurringExpense}
-            onRemoveInstallment={removeRecurringExpense}
+            onRemoveInstallment={removeInstallmentExpense}
           />
         </TabsContent>
 
         <TabsContent value='income'>
-          {/* <IncomeList incomes={incomes} onRemove={removeIncome} /> */}
+          <IncomeList incomes={incomes} onRemove={removeIncome} />
         </TabsContent>
 
         <TabsContent value='overview'>

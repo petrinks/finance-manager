@@ -5,9 +5,9 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 
 const prisma = new PrismaClient();
 
-// Excluir uma despesa recorrente
+// DELETE: remove despesa parcelada existente por ID
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -15,44 +15,23 @@ export async function DELETE(
     if (!session?.user?.email) {
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
-
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
-
     if (!user) {
       return NextResponse.json(
         { message: 'Usuário não encontrado' },
         { status: 404 }
       );
     }
-
-    // Verificar se a despesa pertence ao usuário
-    const expense = await prisma.recurringExpense.findUnique({
-      where: { id: params.id },
+    await prisma.installmentExpense.deleteMany({
+      where: { id: params.id, userId: user.id },
     });
-
-    if (!expense) {
-      return NextResponse.json(
-        { message: 'Despesa não encontrada' },
-        { status: 404 }
-      );
-    }
-
-    if (expense.userId !== user.id) {
-      return NextResponse.json({ message: 'Não autorizado' }, { status: 403 });
-    }
-
-    // Excluir a despesa
-    await prisma.recurringExpense.delete({
-      where: { id: params.id },
-    });
-
-    return NextResponse.json({ message: 'Despesa excluída com sucesso' });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao excluir despesa recorrente:', error);
+    console.error('Erro ao remover despesa parcelada:', error);
     return NextResponse.json(
-      { message: 'Erro ao excluir despesa recorrente' },
+      { message: 'Erro ao remover despesa parcelada' },
       { status: 500 }
     );
   }
