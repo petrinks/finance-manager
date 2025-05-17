@@ -25,6 +25,7 @@ import {
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import FinancialOverview from './financial-overview';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -302,121 +303,16 @@ export default function Dashboard() {
           <IncomeList incomes={incomes} onRemove={removeIncome} />
         </TabsContent>
 
+        {/* visao financeira de forma macro */}
+
         <TabsContent value='overview'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Visão Geral Financeira</CardTitle>
-              <CardDescription>
-                Resumo da sua situação financeira atual
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className='space-y-4'>
-                <div className='grid gap-4 md:grid-cols-2'>
-                  <div>
-                    <h3 className='text-lg font-medium'>
-                      Receitas vs Despesas
-                    </h3>
-                    <div className='mt-2 h-[200px] w-full bg-muted rounded-md flex items-end'>
-                      <div className='h-full w-1/2 flex flex-col justify-end items-center p-2'>
-                        <div
-                          className='w-16 bg-green-500 rounded-t-md'
-                          style={{
-                            height: `${Math.min(
-                              100,
-                              (totalIncome /
-                                Math.max(totalIncome, totalExpenses)) *
-                                100
-                            )}%`,
-                          }}
-                        ></div>
-                        <span className='mt-2 text-sm'>Receitas</span>
-                        <span className='font-medium'>
-                          R$ {totalIncome.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className='h-full w-1/2 flex flex-col justify-end items-center p-2'>
-                        <div
-                          className='w-16 bg-red-500 rounded-t-md'
-                          style={{
-                            height: `${Math.min(
-                              100,
-                              (totalExpenses /
-                                Math.max(totalIncome, totalExpenses)) *
-                                100
-                            )}%`,
-                          }}
-                        ></div>
-                        <span className='mt-2 text-sm'>Despesas</span>
-                        <span className='font-medium'>
-                          R$ {totalExpenses.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className='text-lg font-medium'>
-                      Distribuição de Despesas
-                    </h3>
-                    <div className='mt-2 h-[200px] w-full bg-muted rounded-md flex items-end'>
-                      <div className='h-full w-1/2 flex flex-col justify-end items-center p-2'>
-                        <div
-                          className='w-16 bg-orange-400 rounded-t-md'
-                          style={{
-                            height: `${
-                              totalExpenses
-                                ? (totalRecurringExpenses / totalExpenses) * 100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                        <span className='mt-2 text-sm'>Recorrentes</span>
-                        <span className='font-medium'>
-                          R$ {totalRecurringExpenses.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className='h-full w-1/2 flex flex-col justify-end items-center p-2'>
-                        <div
-                          className='w-16 bg-purple-400 rounded-t-md'
-                          style={{
-                            height: `${
-                              totalExpenses
-                                ? (totalInstallmentExpenses / totalExpenses) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                        <span className='mt-2 text-sm'>Parceladas</span>
-                        <span className='font-medium'>
-                          R$ {totalInstallmentExpenses.toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className='text-lg font-medium'>Saldo Disponível</h3>
-                  <div
-                    className={`mt-2 p-4 rounded-md ${
-                      balance >= 0 ? 'bg-green-100' : 'bg-red-100'
-                    }`}
-                  >
-                    <p className='text-2xl font-bold'>
-                      R$ {balance.toFixed(2)}
-                    </p>
-                    <p className='text-sm text-muted-foreground'>
-                      {balance >= 0
-                        ? 'Você está com as finanças positivas!'
-                        : 'Atenção! Suas despesas estão maiores que suas receitas.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <FinancialOverview
+            totalIncome={totalIncome}
+            totalExpenses={totalExpenses}
+            totalRecurringExpenses={totalRecurringExpenses}
+            totalInstallmentExpenses={totalInstallmentExpenses}
+            balance={balance}
+          />
         </TabsContent>
       </Tabs>
     </div>
