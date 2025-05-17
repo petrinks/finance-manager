@@ -1,12 +1,10 @@
 'use client';
 
-import type React from 'react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { InstallmentExpense } from '@/lib/finance';
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface InstallmentExpenseFormProps {
   onSubmit: (expense: InstallmentExpense) => void;
@@ -16,64 +14,73 @@ export function InstallmentExpenseForm({
   onSubmit,
 }: InstallmentExpenseFormProps) {
   const [name, setName] = useState('');
-  const [totalAmount, setTotalAmount] = useState('');
   const [installmentAmount, setInstallmentAmount] = useState('');
+  const [totalAmount, setTotalAmount] = useState('');
   const [totalInstallments, setTotalInstallments] = useState('');
   const [paidInstallments, setPaidInstallments] = useState('');
   const [dueDay, setDueDay] = useState('');
 
+  // 'installment' se o usuário editou o valor da parcela por último
+  // 'total' se o usuário editou o valor total por último
+  const [lastChanged, setLastChanged] = useState<
+    'installment' | 'total' | null
+  >(null);
+
+  // CALCULA TOTAL quando a parcela for o último campo alterado
+  useEffect(() => {
+    if (
+      lastChanged === 'installment' &&
+      installmentAmount &&
+      totalInstallments
+    ) {
+      const total =
+        parseFloat(installmentAmount) * parseInt(totalInstallments, 10);
+      setTotalAmount(total.toFixed(2));
+    }
+  }, [installmentAmount, totalInstallments, lastChanged]);
+
+  // CALCULA PARCELA quando o total for o último campo alterado
+  useEffect(() => {
+    if (lastChanged === 'total' && totalAmount && totalInstallments) {
+      const parc = parseFloat(totalAmount) / parseInt(totalInstallments, 10);
+      setInstallmentAmount(parc.toFixed(2));
+    }
+  }, [totalAmount, totalInstallments, lastChanged]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (
       !name ||
       !installmentAmount ||
+      !totalAmount ||
       !totalInstallments ||
       !paidInstallments ||
       !dueDay
-    )
+    ) {
       return;
+    }
 
     const newExpense: InstallmentExpense = {
       id: Date.now().toString(),
       name,
-      totalAmount: Number.parseFloat(totalAmount),
-      installmentAmount: Number.parseFloat(installmentAmount),
-      totalInstallments: Number.parseInt(totalInstallments),
-      paidInstallments: Number.parseInt(paidInstallments),
-      dueDay: Number.parseInt(dueDay),
+      totalAmount: parseFloat(totalAmount),
+      installmentAmount: parseFloat(installmentAmount),
+      totalInstallments: parseInt(totalInstallments, 10),
+      paidInstallments: parseInt(paidInstallments, 10),
+      dueDay: parseInt(dueDay, 10),
       type: 'installment',
       createdAt: new Date().toISOString(),
     };
 
     onSubmit(newExpense);
-
-    // Reset form
+    // limpa formulário
     setName('');
-    setTotalAmount('');
     setInstallmentAmount('');
+    setTotalAmount('');
     setTotalInstallments('');
     setPaidInstallments('');
     setDueDay('');
-  };
-
-  // Calcular valor total quando o usuário preencher valor da parcela e número de parcelas
-  const calculateTotal = () => {
-    if (installmentAmount && totalInstallments) {
-      const total =
-        Number.parseFloat(installmentAmount) *
-        Number.parseInt(totalInstallments);
-      setTotalAmount(total.toFixed(2));
-    }
-  };
-
-  // Calcular valor da parcela quando o usuário preencher valor total e número de parcelas
-  const calculateInstallment = () => {
-    if (totalAmount && totalInstallments) {
-      const installment =
-        Number.parseFloat(totalAmount) / Number.parseInt(totalInstallments);
-      setInstallmentAmount(installment.toFixed(2));
-    }
+    setLastChanged(null);
   };
 
   return (
@@ -101,7 +108,7 @@ export function InstallmentExpenseForm({
             value={installmentAmount}
             onChange={(e) => {
               setInstallmentAmount(e.target.value);
-              if (totalInstallments) calculateTotal();
+              setLastChanged('installment');
             }}
             required
           />
@@ -118,7 +125,7 @@ export function InstallmentExpenseForm({
             value={totalAmount}
             onChange={(e) => {
               setTotalAmount(e.target.value);
-              if (totalInstallments) calculateInstallment();
+              setLastChanged('total');
             }}
             required
           />
@@ -134,11 +141,7 @@ export function InstallmentExpenseForm({
             min='1'
             placeholder='10'
             value={totalInstallments}
-            onChange={(e) => {
-              setTotalInstallments(e.target.value);
-              if (installmentAmount) calculateTotal();
-              else if (totalAmount) calculateInstallment();
-            }}
+            onChange={(e) => setTotalInstallments(e.target.value)}
             required
           />
         </div>
