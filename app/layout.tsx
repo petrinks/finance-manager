@@ -4,7 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'Gerenciador de Finanças Pessoais',
+  title: 'Finances on Track',
   description: 'Gerencie suas finanças pessoais de forma simples e eficiente',
 };
 
