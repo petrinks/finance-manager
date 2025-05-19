@@ -1,0 +1,16 @@
+name: Checar parcelas vencidas
+
+on:
+  # roda automaticamente uma vez por dia às 06:00 UTC (03:00 BRT)
+  schedule:
+    - cron: '0 6 * * *'
+  # permite disparar manualmente caso você queira testar
+  workflow_dispatch:
+
+jobs:
+  check_installments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar rota de checagem de parcelas
+        run: |
+          curl -X GET https://stuzy.me/api/cron/check-installments
