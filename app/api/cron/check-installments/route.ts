@@ -3,32 +3,36 @@
 // por isso acaba sendo mais lento, mas é mais simples de entender
 //
 import { PrismaClient } from '@prisma/client';
+import { startOfToday } from 'date-fns';
 import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
 export async function GET() {
-  const today = new Date();
-  const day = today.getDate();
+  const now = new Date();
+  const today = now.getDate();
+  const dayStart = startOfToday(); // 00:00:00 de hoje
 
-  // 1) pega quem vence hoje
+  // 1) Busca só quem vence hoje
   const vencendoHoje = await prisma.installmentExpense.findMany({
-    where: { dueDay: day },
+    where: { dueDay: today },
   });
 
-  // 2) filtra quem ainda não pagou tudo
+  // 2) Filtra quem ainda não quitou todas as parcelas
+  //    E que NÃO foi atualizado hoje (updatedAt < 00:00:00 de hoje)
   const pendentes = vencendoHoje.filter(
-    (e) => e.paidInstallments < e.totalInstallments
+    (exp) =>
+      exp.paidInstallments < exp.totalInstallments && exp.updatedAt < dayStart
   );
 
-  // 3) atualiza E coleta o registro pós-update
+  // 3) Incrementa +1 em paidInstallments e atualiza updatedAt
   const updatedRecords = await Promise.all(
-    pendentes.map((e) =>
+    pendentes.map((exp) =>
       prisma.installmentExpense.update({
-        where: { id: e.id },
+        where: { id: exp.id },
         data: {
-          paidInstallments: e.paidInstallments + 1,
-          updatedAt: today,
+          paidInstallments: exp.paidInstallments + 1,
+          updatedAt: now,
         },
       })
     )
@@ -37,6 +41,5 @@ export async function GET() {
   return NextResponse.json({
     updatedCount: updatedRecords.length,
     updatedRecords,
-    pendentesBefore: pendentes,
   });
 }
